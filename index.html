@@ -1,0 +1,173 @@
+let patients = JSON.parse(localStorage.getItem('patients')) || [];
+let currentPatientIndex = -1;
+
+const patientForm = document.getElementById('patientForm');
+const patientList = document.getElementById('patientList');
+const searchInput = document.getElementById('searchInput');
+const saveBtn = document.getElementById('saveBtn');
+const clearBtn = document.getElementById('clearBtn');
+
+// Save patient
+patientForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const patient = {
+        name: document.getElementById('name').value,
+        mobile: document.getElementById('mobile').value,
+        age: document.getElementById('age').value,
+        sex: document.getElementById('sex').value,
+        address: document.getElementById('address').value,
+        leftEye: document.getElementById('leftEye').value,
+        rightEye: document.getElementById('rightEye').value,
+        pd: document.getElementById('pd').value,
+        lensType: document.getElementById('lensType').value,
+        lensPrice: document.getElementById('lensPrice').value,
+        frameType: document.getElementById('frameType').value,
+        framePrice: document.getElementById('framePrice').value
+    };
+
+    if (currentPatientIndex === -1) {
+        patients.push(patient);
+    } else {
+        patients[currentPatientIndex] = patient;
+        currentPatientIndex = -1;
+        saveBtn.textContent = 'Save';
+    }
+
+    localStorage.setItem('patients', JSON.stringify(patients));
+    patientForm.reset();
+    loadPatients();
+});
+
+// Edit patient
+patientList.addEventListener('click', (e) => {
+    if (e.target.classList.contains('edit-btn')) {
+        const index = e.target.dataset.index;
+        const patient = patients[index];
+        document.getElementById('name').value = patient.name;
+        document.getElementById('mobile').value = patient.mobile;
+        document.getElementById('age').value = patient.age;
+        document.getElementById('sex').value = patient.sex;
+        document.getElementById('address').value = patient.address;
+        document.getElementById('leftEye').value = patient.leftEye;
+        document.getElementById('rightEye').value = patient.rightEye;
+        document.getElementById('pd').value = patient.pd;
+        document.getElementById('lensType').value = patient.lensType;
+        document.getElementById('lensPrice').value = patient.lensPrice;
+        document.getElementById('frameType').value = patient.frameType;
+        document.getElementById('framePrice').value = patient.framePrice;
+        currentPatientIndex = index;
+        saveBtn.textContent = 'Update';
+    }
+});
+
+// Delete patient
+patientList.addEventListener('click', (e) => {
+    if (e.target.classList.contains('delete-btn')) {
+        const index = e.target.dataset.index;
+        patients.splice(index, 1);
+        localStorage.setItem('patients', JSON.stringify(patients));
+        loadPatients();
+    }
+});
+
+// Share patient record
+patientList.addEventListener('click', (e) => {
+    if (e.target.classList.contains('share-btn')) {
+        const index = e.target.dataset.index;
+        const patient = patients[index];
+        const shareModal = new bootstrap.Modal(document.getElementById('shareModal'));
+        shareModal.show();
+
+        document.getElementById('shareWhatsApp').onclick = () => shareVia('whatsapp', patient);
+        document.getElementById('shareFacebook').onclick = () => shareVia('facebook', patient);
+        document.getElementById('shareViber').onclick = () => shareVia('viber', patient);
+    }
+});
+
+// Share functionality
+function shareVia(platform, patient) {
+    const message = `Patient: ${patient.name}
+Age: ${patient.age}
+Sex: ${patient.sex}
+Left Eye: ${patient.leftEye}
+Right Eye: ${patient.rightEye}
+PD: ${patient.pd}
+Lens: ${patient.lensType} ($${patient.lensPrice})
+Frame: ${patient.frameType} ($${patient.framePrice})`;
+
+    let url;
+    switch(platform) {
+        case 'whatsapp':
+            url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            break;
+        case 'facebook':
+            url = `https://www.facebook.com/dialog/send?link=${encodeURIComponent(window.location.href)}&app_id=YOUR_FACEBOOK_APP_ID&quote=${encodeURIComponent(message)}`;
+            break;
+        case 'viber':
+            url = `viber://forward?text=${encodeURIComponent(message)}`;
+            break;
+    }
+    window.open(url, '_blank');
+}
+
+// Search functionality
+searchInput.addEventListener('input', (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    const filteredPatients = patients.filter(patient => 
+        patient.name.toLowerCase().includes(searchTerm) ||
+        patient.mobile.includes(searchTerm) ||
+        patient.address.toLowerCase().includes(searchTerm)
+    );
+    renderPatients(filteredPatients);
+});
+
+// Render patients
+function renderPatients(patientsToRender) {
+    patientList.innerHTML = '';
+    patientsToRender.forEach((patient, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${patient.name}</td>
+            <td>${patient.mobile}</td>
+            <td>${patient.age}</td>
+            <td>${patient.sex}</td>
+            <td>
+                <button class="btn btn-sm btn-primary edit-btn" data-index="${index}">Edit</button>
+                <button class="btn btn-sm btn-danger delete-btn" data-index="${index}">Delete</button>
+                <button class="btn btn-sm btn-success share-btn" data-index="${index}">Share</button>
+            </td>
+        `;
+        patientList.appendChild(row);
+    });
+}
+
+// Clear form
+clearBtn.addEventListener('click', () => {
+    patientForm.reset();
+    currentPatientIndex = -1;
+    saveBtn.textContent = 'Save';
+});
+
+// Load patients
+function loadPatients() {
+    patientList.innerHTML = '';
+    patients.forEach((patient, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${patient.name}</td>
+            <td>${patient.mobile}</td>
+            <td>${patient.age}</td>
+            <td>${patient.sex}</td>
+            <td>
+                <button class="btn btn-sm btn-primary edit-btn" data-index="${index}">Edit</button>
+                <button class="btn btn-sm btn-danger delete-btn" data-index="${index}">Delete</button>
+                <button class="btn btn-sm btn-success share-btn" data-index="${index}">Share</button>
+            </td>
+        `;
+        patientList.appendChild(row);
+    });
+}
+
+// Initial load
+loadPatients();
+
